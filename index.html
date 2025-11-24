@@ -177,9 +177,11 @@
         }
 
         .advice-text {
-            font-size: 0.9rem;
-            font-weight: bold;
+            font-size: 1.4rem;
+            font-weight: 900;
             color: var(--ac-brown);
+            margin: 5px 0;
+            line-height: 1.2;
         }
 
         /* === 稍後預報：橫向滑動區 === */
@@ -258,10 +260,9 @@
 
 <body>
     <div id="loading" class="loading-screen">
-        <div style="font-size: 4rem; animation: spin 2s linear infinite;">✈️</div>
-        <p style="color: white; font-weight: bold; margin-top: 20px;">正在聯絡渡渡鳥航空...</p>
+        <div style="font-size: 4rem; animation: bounce 2s infinite;">☁️</div>
+        <p style="color: white; font-weight: bold; margin-top: 20px;">正在觀測雲的流動...</p>
     </div>
-
     <div class="status-bar">
         <div class="location-pill">📍 高雄</div>
         <div id="updateTime" class="update-pill">更新中...</div>
@@ -332,28 +333,28 @@
             const avgTemp = Math.round((parseInt(current.maxTemp) + parseInt(current.minTemp)) / 2);
 
             document.getElementById('heroCard').innerHTML = `
-                    <div class="hero-card">
-                        <div class="hero-period">${period}</div>
-                        <div class="hero-temp-container">
-                            <div class="hero-icon">${getWeatherIcon(current.weather)}</div>
-                            <div class="hero-temp">${avgTemp}°</div>
-                        </div>
-                        <div class="hero-desc">${current.weather}</div>
-                        
-                        <div class="advice-grid">
-                            <div class="advice-item">
-                                <div class="advice-icon">${advice.rainIcon}</div>
-                                <div class="advice-text">${advice.rainText}</div>
-                                <div style="font-size:0.7rem; color:#999">降雨率 ${current.rain}</div>
+                        <div class="hero-card">
+                            <div class="hero-period">${period}</div>
+                            <div class="hero-temp-container">
+                                <div class="hero-icon">${getWeatherIcon(current.weather)}</div>
+                                <div class="hero-temp">${avgTemp}°</div>
                             </div>
-                            <div class="advice-item">
-                                <div class="advice-icon">${advice.clothIcon}</div>
-                                <div class="advice-text">${advice.clothText}</div>
-                                <div style="font-size:0.7rem; color:#999">最高溫 ${current.maxTemp}°</div>
+                            <div class="hero-desc">${current.weather}</div>
+                            
+                            <div class="advice-grid">
+                                <div class="advice-item">
+                                    <div class="advice-icon">${advice.rainIcon}</div>
+                                    <div class="advice-text">${advice.rainText}</div>
+                                    <div style="font-size:0.7rem; color:#999">降雨率 ${current.rain}</div>
+                                </div>
+                                <div class="advice-item">
+                                    <div class="advice-icon">${advice.clothIcon}</div>
+                                    <div class="advice-text">${advice.clothText}</div>
+                                    <div style="font-size:0.7rem; color:#999">最高溫 ${current.maxTemp}°</div>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                `;
+                    `;
 
             // 2. 渲染稍後預報 (包含明天判斷)
             const scrollContainer = document.getElementById('futureForecasts');
@@ -372,13 +373,13 @@
                 }
 
                 scrollContainer.innerHTML += `
-                        <div class="mini-card">
-                            <div class="mini-time">${p}</div>
-                            <div class="mini-icon">${getWeatherIcon(f.weather)}</div>
-                            <div class="mini-temp">${f.minTemp}° - ${f.maxTemp}°</div>
-                            <div style="font-size:0.8rem; color:#888; margin-top:5px;">💧${f.rain}</div>
-                        </div>
-                    `;
+                            <div class="mini-card">
+                                <div class="mini-time">${p}</div>
+                                <div class="mini-icon">${getWeatherIcon(f.weather)}</div>
+                                <div class="mini-temp">${f.minTemp}° - ${f.maxTemp}°</div>
+                                <div style="font-size:0.8rem; color:#888; margin-top:5px;">💧${f.rain}</div>
+                            </div>
+                        `;
             });
 
             // 3. 右上角顯示今日日期
@@ -393,10 +394,20 @@
 
         async function fetchWeather() {
             try {
-                const res = await fetch(API_URL);
-                const json = await res.json();
+                // 1. 定義「最低等待時間」：1500 毫秒 (1.5秒)
+                const delayPromise = new Promise(resolve => setTimeout(resolve, 1500));
+
+                // 2. 定義「抓取資料」的工作
+                const fetchPromise = fetch(API_URL).then(res => res.json());
+
+                // 3. Promise.all 會等待「兩個都完成」才會往下走
+                // result 陣列裡，第一個是 delay 的結果(沒用到)，第二個是 api 的 json 資料
+                const [_, json] = await Promise.all([delayPromise, fetchPromise]);
+
                 if (json.success) {
                     renderWeather(json.data);
+
+                    // 資料處理好後，隱藏 Loading，顯示主畫面
                     document.getElementById('loading').style.display = 'none';
                     document.getElementById('mainContent').style.display = 'block';
                 } else {
